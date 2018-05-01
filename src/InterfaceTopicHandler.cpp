@@ -1,30 +1,44 @@
-#include "mtf_bridge/SharedImageReader.h"
+#include "mtf_bridge/InterfaceTopicHandler.h"
 
-SharedImageReader::SharedImageReader() : initialized(false), frame_id(0){
+InterfaceTopicHandler::InterfaceTopicHandler() : initialized(false), frame_id(0){
 	ros::NodeHandle nh_("~");
 	// Read in parameters and subscribe
-
+	nh_.param<std::string>("shm_name", shm_name, "SharedBuffer");
 	std::string init_topic;
 	std::string image_index_topic;
-	nh_.param<std::string>("shm_name", shm_name, "SharedBuffer");
+	std::string task_coord_topic;
+
 	nh_.param<std::string>("init_topic", init_topic, "/init_buffer");
 	nh_.param<std::string>("image_index_topic", image_index_topic, "/input_image");
+	nh_.param<std::string>("task_coord_topic", task_coord_topic, "/task_coordinates");
 
-	init_buffer_sub = nh_.subscribe(init_topic, 1, &SharedImageReader::update_image_properties, this);
-	image_index_sub = nh_.subscribe(image_index_topic, 1, &SharedImageReader::update_image_index, this);
+	init_buffer_sub = nh_.subscribe(init_topic, 1, &InterfaceTopicHandler::update_image_properties, this);	
+	image_index_sub = nh_.subscribe(image_index_topic, 1, &InterfaceTopicHandler::update_image_index, this);
+	task_coord_sub = nh_.subscribe(task_coord_topic, 1, &InterfaceTopicHandler::update_task_coords, this);
+	reset_sub = nh_.subscribe("/reset", 1, &InterfaceTopicHandler::reset_trackers, this);
 
-	std::cout << "MTF-SIR: Read Param shm_name: " << shm_name << "\n";
-	std::cout << "MTF-SIR: Read Param init_topic: " << init_topic << "\n";
-	std::cout << "MTF-SIR: Read Param image_index_topic: " << image_index_topic << "\n";
-	std::cout << "MTF-SIR: Shared image reader initialized.\n";
+	std::cout << "MTF: Initializing " << shm_name << "\n";
+	std::cout << "MTF: Subscribing to ~" << init_topic << "\n";
+	std::cout << "MTF: Subscribing to ~" << image_index_topic << "\n";
+	std::cout << "MTF: Subscribing to ~" << task_coord_topic << "\n";
+	std::cout << "MTF: Subscribing to /reset\n";
+	std::cout << "MTF: Topic handler initialized.\n";
+}
+void InterfaceTopicHandler::update_task_coords(std_msgs::StringConstPtr msg_data) {
+	msg = msg_data->data;
 }
 
-void SharedImageReader::update_image_index(std_msgs::UInt32ConstPtr index) {
+void InterfaceTopicHandler::reset_trackers(std_msgs::BoolConstPtr reset_all) {
+	reset = reset_all->data;
+	msg.clear();
+}
+
+void InterfaceTopicHandler::update_image_index(std_msgs::UInt32ConstPtr index) {
 	buffer_id = index->data;
 	++frame_id;
 }
 
-void SharedImageReader::update_image_properties(mtf_bridge::BufferInitConstPtr buffer_init) {
+void InterfaceTopicHandler::update_image_properties(mtf_bridge::BufferInitConstPtr buffer_init) {
 	if(initialized)  {
 		return;
 	}
@@ -36,7 +50,6 @@ void SharedImageReader::update_image_properties(mtf_bridge::BufferInitConstPtr b
 	frame_size = buffer_init->frame_size;
 	buffer_id = buffer_init->init_id;
 	frame_id = 0;
-	std::cout << "*******************************\n";
 	std::cout << "MTF: Image properties:\n"
 		"\theight: " << height << "\n"
 		"\twidth: " << width << "\n"
@@ -44,19 +57,19 @@ void SharedImageReader::update_image_properties(mtf_bridge::BufferInitConstPtr b
 		"\tbuffer_count: " << buffer_count << "\n"
 		"\tframe_size: " << frame_size << "\n"
 		"\tbuffer_id: " << buffer_id << "\n";
-	std::cout << "*******************************\n";
 	initialize_shm();
 	init_buffer_sub.shutdown();
-	std::cout << "MTF-SIR: SHM initialized.\n";
+	std::cout << "MTF: Node initialized.\n\n";
 }
 
-void SharedImageReader::initialize_shm() {
+void InterfaceTopicHandler::initialize_shm() {
 	// Opens read only shared region of memmory
 	shm = new boost::interprocess::shared_memory_object(boost::interprocess::open_only,
 		shm_name.c_str(),
 		boost::interprocess::read_write);
 	region = new boost::interprocess::mapped_region(*shm, boost::interprocess::read_only);
 	uchar* start_addr = static_cast<uchar*>(region->get_address());
+
 	// Create Mat objects for each of the frames in the buffer
 	frame_buffer = new cv::Mat*[buffer_count];
 	shared_mem_addrs = new uchar*[buffer_count];
@@ -68,6 +81,6 @@ void SharedImageReader::initialize_shm() {
 	}
 }
 
-cv::Mat* SharedImageReader::getFrame() {
+cv::Mat* InterfaceTopicHandler::getFrame() {
 	return frame_buffer[buffer_id];
 }

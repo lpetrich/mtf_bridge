@@ -69,6 +69,7 @@ add_message_files(
   PatchTrackers.msg
   Point.msg
   BufferInit.msg
+  Error.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -145,21 +146,27 @@ link_directories(
 add_library(SharedImageReader src/SharedImageReader.cpp)
 add_dependencies(SharedImageReader ${catkin_EXPORTED_TARGETS})
 
+add_library(InterfaceTopicHandler src/InterfaceTopicHandler.cpp)
+add_dependencies(InterfaceTopicHandler ${catkin_EXPORTED_TARGETS})
+
+add_executable(SharedImageWriter src/SharedImageWriter.cpp)
+
 add_executable(sample_tracker_node src/sample_tracker_node.cpp)
 target_compile_definitions(sample_tracker_node PUBLIC ${MTF_DEFINITIONS})
 target_compile_options(sample_tracker_node PUBLIC ${MTF_RUNTIME_FLAGS})
 # set_target_properties(sample_tracker_node PROPERTIES COMPILE_FLAGS ${MTF_RUNTIME_FLAGS}) 
 
-add_executable(tracker_node src/tracker_node.cpp)
-target_compile_definitions(tracker_node PUBLIC ${MTF_DEFINITIONS})
-target_compile_options(tracker_node PUBLIC ${MTF_RUNTIME_FLAGS})
-
-add_executable(SharedImageWriter src/SharedImageWriter.cpp)
+add_executable(interface_tracker_node src/interface_tracker_node.cpp)
+target_compile_definitions(interface_tracker_node PUBLIC ${MTF_DEFINITIONS})
+target_compile_options(interface_tracker_node PUBLIC ${MTF_RUNTIME_FLAGS})
 
 target_link_libraries(SharedImageReader
   ${catkin_LIBRARIES}
  )
-target_link_libraries(SharedImageWriter
+ target_link_libraries(InterfaceTopicHandler
+  ${catkin_LIBRARIES}
+ )
+ target_link_libraries(SharedImageWriter
   ${catkin_LIBRARIES}
   rt
 )
@@ -168,15 +175,18 @@ target_link_libraries(sample_tracker_node
   ${catkin_LIBRARIES}
   ${MTF_LIBRARIES}
 )
-target_link_libraries(tracker_node
+target_link_libraries(interface_tracker_node
+  InterfaceTopicHandler
   SharedImageReader
   ${catkin_LIBRARIES}
   ${MTF_LIBRARIES}
 )
+
 add_dependencies(SharedImageReader ${PROJECT_NAME}_generate_messages_cpp ${PROJECT_NAME}_gencfg)
+add_dependencies(InterfaceTopicHandler ${PROJECT_NAME}_generate_messages_cpp ${PROJECT_NAME}_gencfg)
 add_dependencies(SharedImageWriter ${PROJECT_NAME}_generate_messages_cpp ${PROJECT_NAME}_gencfg)
 add_dependencies(sample_tracker_node ${PROJECT_NAME}_generate_messages_cpp ${PROJECT_NAME}_gencfg)
-add_dependencies(tracker_node ${PROJECT_NAME}_generate_messages_cpp ${PROJECT_NAME}_gencfg)
+add_dependencies(interface_tracker_node ${PROJECT_NAME}_generate_messages_cpp ${PROJECT_NAME}_gencfg)
 
 message(STATUS "MTF_DEFINITIONS: ${MTF_DEFINITIONS}")
 # message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
