@@ -2,6 +2,8 @@
 
 InterfaceTopicHandler::InterfaceTopicHandler() : initialized(false), frame_id(0){
 	ros::NodeHandle nh_("~");
+	msg = "";
+	reset = false;
 	// Read in parameters and subscribe
 	nh_.param<std::string>("shm_name", shm_name, "SharedBuffer");
 	std::string init_topic;
@@ -12,10 +14,10 @@ InterfaceTopicHandler::InterfaceTopicHandler() : initialized(false), frame_id(0)
 	nh_.param<std::string>("image_index_topic", image_index_topic, "/input_image");
 	nh_.param<std::string>("task_coord_topic", task_coord_topic, "/task_coordinates");
 
-	init_buffer_sub = nh_.subscribe(init_topic, 1, &InterfaceTopicHandler::update_image_properties, this);	
-	image_index_sub = nh_.subscribe(image_index_topic, 1, &InterfaceTopicHandler::update_image_index, this);
-	task_coord_sub = nh_.subscribe(task_coord_topic, 1, &InterfaceTopicHandler::update_task_coords, this);
-	reset_sub = nh_.subscribe("/reset", 1, &InterfaceTopicHandler::reset_trackers, this);
+	init_buffer_sub = nh_.subscribe(init_topic, 1, &InterfaceTopicHandler::callback_image_properties, this);	
+	image_index_sub = nh_.subscribe(image_index_topic, 1, &InterfaceTopicHandler::callback_image_index, this);
+	task_coord_sub = nh_.subscribe(task_coord_topic, 1, &InterfaceTopicHandler::callback_task_coords, this);
+	reset_sub = nh_.subscribe("/reset", 1, &InterfaceTopicHandler::callback_reset, this);
 
 	std::cout << "MTF: Initializing " << shm_name << "\n";
 	std::cout << "MTF: Subscribing to ~" << init_topic << "\n";
@@ -24,21 +26,31 @@ InterfaceTopicHandler::InterfaceTopicHandler() : initialized(false), frame_id(0)
 	std::cout << "MTF: Subscribing to /reset\n";
 	std::cout << "MTF: Topic handler initialized.\n";
 }
-void InterfaceTopicHandler::update_task_coords(std_msgs::StringConstPtr msg_data) {
+
+void InterfaceTopicHandler::clearMsg() {
+	msg.clear();
+}
+
+void InterfaceTopicHandler::doneReset() {
+	reset = false;
+}
+
+void InterfaceTopicHandler::callback_task_coords(std_msgs::StringConstPtr msg_data) {
+	std::cout << "New coordinates received";
 	msg = msg_data->data;
 }
 
-void InterfaceTopicHandler::reset_trackers(std_msgs::BoolConstPtr reset_all) {
+void InterfaceTopicHandler::callback_reset(std_msgs::BoolConstPtr reset_all) {
 	reset = reset_all->data;
 	msg.clear();
 }
 
-void InterfaceTopicHandler::update_image_index(std_msgs::UInt32ConstPtr index) {
+void InterfaceTopicHandler::callback_image_index(std_msgs::UInt32ConstPtr index) {
 	buffer_id = index->data;
 	++frame_id;
 }
 
-void InterfaceTopicHandler::update_image_properties(mtf_bridge::BufferInitConstPtr buffer_init) {
+void InterfaceTopicHandler::callback_image_properties(mtf_bridge::BufferInitConstPtr buffer_init) {
 	if(initialized)  {
 		return;
 	}

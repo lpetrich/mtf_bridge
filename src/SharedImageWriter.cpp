@@ -3,22 +3,24 @@
 SharedImageWriter::SharedImageWriter() : initialized(false), channels(3) {
 	ros::NodeHandle nh;
 	image_transport::ImageTransport it(nh);
+
 	// Read in shared buffer name
 	ros::NodeHandle nh_("~");
 	nh_.param<std::string>("shm_name", shm_name, "SharedBuffer");
+	ROS_INFO_STREAM("Writer read Param shm_name: " << shm_name);
+
 	// Read in init_buffer topic
 	nh.param<int>("buffer_count", buffer_count, 500);
+	ROS_INFO_STREAM("Read Param buffer_count: " << buffer_count);
+
 	// Read in init_buffer topic
 	std::string image_topic;
 	nh.param<std::string>("image_topic", image_topic, "/camera/image_raw");
+	ROS_INFO_STREAM("Read Param image_topic: " << image_topic);
 	image_sub = it.subscribe(image_topic, 1, &SharedImageWriter::new_image_cb, this);
+
 	init_buffer_pub = nh.advertise<mtf_bridge::BufferInit>("init_buffer", 1000);
 	image_index_pub = nh.advertise<std_msgs::UInt32>("input_image", 1000);
-
-	std::cout << "MTF-SIW: Read Param shm_name: " << shm_name << "\n";
-	std::cout << "MTF-SIW: Read Param buffer_count: " << buffer_count << "\n";
-	std::cout << "MTF-SIW: Subscribing to ~" << image_topic << "\n";
-	std::cout << "MTF-SIW: Shared image writer initialized.\n";
 }
 
 void SharedImageWriter::initialize_shared_buffer() {

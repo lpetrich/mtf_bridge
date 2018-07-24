@@ -2,21 +2,21 @@
 
 SharedImageReader::SharedImageReader() : initialized(false), frame_id(0){
 	ros::NodeHandle nh_("~");
-	// Read in parameters and subscribe
 
-	std::string init_topic;
-	std::string image_index_topic;
+	// Read in shared buffer name
 	nh_.param<std::string>("shm_name", shm_name, "SharedBuffer");
+	ROS_INFO_STREAM("Reader read Param shm_name: " << shm_name);
+
+	// Read in init_buffer topic
+	std::string init_topic;
 	nh_.param<std::string>("init_topic", init_topic, "/init_buffer");
-	nh_.param<std::string>("image_index_topic", image_index_topic, "/input_image");
-
+	ROS_INFO_STREAM("Read Param init_topic: " << init_topic);
 	init_buffer_sub = nh_.subscribe(init_topic, 1, &SharedImageReader::update_image_properties, this);
-	image_index_sub = nh_.subscribe(image_index_topic, 1, &SharedImageReader::update_image_index, this);
 
-	std::cout << "MTF-SIR: Read Param shm_name: " << shm_name << "\n";
-	std::cout << "MTF-SIR: Read Param init_topic: " << init_topic << "\n";
-	std::cout << "MTF-SIR: Read Param image_index_topic: " << image_index_topic << "\n";
-	std::cout << "MTF-SIR: Shared image reader initialized.\n";
+	std::string image_index_topic;
+	nh_.param<std::string>("image_index_topic", image_index_topic, "/input_image");
+	ROS_INFO_STREAM("Read Param image_index_topic: " << image_index_topic);
+	image_index_sub = nh_.subscribe(image_index_topic, 1, &SharedImageReader::update_image_index, this);
 }
 
 void SharedImageReader::update_image_index(std_msgs::UInt32ConstPtr index) {
@@ -29,6 +29,7 @@ void SharedImageReader::update_image_properties(mtf_bridge::BufferInitConstPtr b
 		return;
 	}
 	initialized = true;
+	ROS_INFO_STREAM("GOT IMAGE PROPERTIES");
 	height = buffer_init->height;
 	width = buffer_init->width;
 	channels = buffer_init->channels;
@@ -36,18 +37,17 @@ void SharedImageReader::update_image_properties(mtf_bridge::BufferInitConstPtr b
 	frame_size = buffer_init->frame_size;
 	buffer_id = buffer_init->init_id;
 	frame_id = 0;
-	std::cout << "*******************************\n";
-	std::cout << "MTF: Image properties:\n"
-		"\theight: " << height << "\n"
-		"\twidth: " << width << "\n"
-		"\tchannels: " << channels << "\n"
-		"\tbuffer_count: " << buffer_count << "\n"
-		"\tframe_size: " << frame_size << "\n"
-		"\tbuffer_id: " << buffer_id << "\n";
-	std::cout << "*******************************\n";
+
+	ROS_INFO_STREAM("Initialized image parameters");
+	ROS_INFO_STREAM("height: " << height);
+	ROS_INFO_STREAM("width: " << width);
+	ROS_INFO_STREAM("channels: " << channels);
+	ROS_INFO_STREAM("buffer_count: " << buffer_count);
+	ROS_INFO_STREAM("frame_size: " << frame_size);
+	ROS_INFO_STREAM("buffer_id: " << buffer_id);
 	initialize_shm();
 	init_buffer_sub.shutdown();
-	std::cout << "MTF-SIR: SHM initialized.\n";
+	ROS_INFO_STREAM("SHM initialized");
 }
 
 void SharedImageReader::initialize_shm() {
@@ -57,6 +57,7 @@ void SharedImageReader::initialize_shm() {
 		boost::interprocess::read_write);
 	region = new boost::interprocess::mapped_region(*shm, boost::interprocess::read_only);
 	uchar* start_addr = static_cast<uchar*>(region->get_address());
+
 	// Create Mat objects for each of the frames in the buffer
 	frame_buffer = new cv::Mat*[buffer_count];
 	shared_mem_addrs = new uchar*[buffer_count];

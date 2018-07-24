@@ -17,15 +17,17 @@
 
 class InterfaceTopicHandler {
 public:
+    std::string msg;
     InterfaceTopicHandler ();
 	bool isInitialized() { return initialized; };
     bool checkReset() { return reset; };
-
 	cv::Mat* getFrame();
 	int getHeight() { return height; };
     int getWidth() { return width; };
 	int getFrameID() { return frame_id; };
     std::string getMsg() { return msg; };
+    void clearMsg();
+    void doneReset();
 
 private:
     bool initialized;
@@ -40,7 +42,6 @@ private:
 
     uchar** shared_mem_addrs;
     std::string shm_name;
-    std::string msg;
     boost::interprocess::shared_memory_object* shm;
     boost::interprocess::mapped_region* region;
     cv::Mat **frame_buffer;
@@ -50,11 +51,10 @@ private:
     ros::Subscriber task_coord_sub;
     ros::Subscriber reset_sub;
 
-    void update_image_properties(mtf_bridge::BufferInitConstPtr buffer_init);
-    void update_image_index(std_msgs::UInt32ConstPtr index);
+    void callback_image_properties(mtf_bridge::BufferInitConstPtr buffer_init);
+    void callback_image_index(std_msgs::UInt32ConstPtr index);
+    void callback_task_coords(std_msgs::StringConstPtr msg_data);
+    void callback_reset(std_msgs::BoolConstPtr reset_all);
     void initialize_shm();
-    void update_task_coords(std_msgs::StringConstPtr msg_data);
-    void reset_trackers(std_msgs::BoolConstPtr reset_all);
-
 };
 #endif /* ifndef INTERFACETOPICHANDLER_H */
