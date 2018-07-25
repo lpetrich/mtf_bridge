@@ -142,22 +142,25 @@ void updateTrackers() {
 		return;
 	}
 	if (topic_handler->checkReset()) {
+		std::cout << "MTF: Resetting.\n";
         if (trackers.size() > 0) {
             trackers.erase(trackers.begin(), trackers.end());
             pre_procs.erase(pre_procs.begin(), pre_procs.end());
         }
+		// trackers.clear();
+		// pre_procs.clear();
 		num_tasks = 0;
 		tracker_id = 0;
 		topic_handler->doneReset();
 	} else {
 	    std::string patch_msg = "";
-	    uncalibrated_visual_servoing::TrackedPoints center_msg;
+	    visual_servoing::TrackedPoints center_msg;
 		for(std::vector<TrackerStruct>::iterator tracker = trackers.begin(); 
 			tracker != trackers.end(); ++tracker) {
 			(*tracker).update(*(topic_handler->getFrame()), topic_handler->getFrameID());
 			std::string patch = getPatch(*tracker);
 			// std::string center = getCenter(*tracker);
-			uncalibrated_visual_servoing::TrackPoint p = getCenterPoint(*tracker);
+			visual_servoing::TrackPoint p = getCenterPoint(*tracker);
 			patch_msg += patch;
 			center_msg.points.push_back(p);
 		}
@@ -280,7 +283,6 @@ void trackerCheck() {
 	std::string clicked_points = topic_handler->getMsg();
 	if (clicked_points.size() > 0) { 
 		topic_handler->clearMsg();
-		topic_handler->doneReset();
 		initializeTrackers(clicked_points);
 		std::cout << "MTF: All tasks initialized.\n";
 	}
@@ -319,7 +321,7 @@ int main(int argc, char *argv[]) {
 	std::cout << "MTF: Publishing to ~/trackers/patch_tracker\n";
 	std::cout << "MTF: Publishing to ~/trackers/centers\n";
 	patch_pub = nh_.advertise<std_msgs::String>("patch_tracker", 1);
-	center_pub = nh_.advertise<uncalibrated_visual_servoing::TrackedPoints>("centers", 1);
+	center_pub = nh_.advertise<visual_servoing::TrackedPoints>("centers", 1);
 	ros::Rate loop_rate(rate);
 
 	while(!topic_handler->isInitialized()) {

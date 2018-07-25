@@ -42,6 +42,7 @@ void InterfaceTopicHandler::callback_task_coords(std_msgs::StringConstPtr msg_da
 
 void InterfaceTopicHandler::callback_reset(std_msgs::BoolConstPtr reset_all) {
 	reset = reset_all->data;
+	std::cout << "MTF: reset received" << std::endl;
 	msg.clear();
 }
 
