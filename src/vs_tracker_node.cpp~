@@ -3,8 +3,8 @@
 #include <image_transport/image_transport.h>
 #include "mtf_bridge/InterfaceTopicHandler.h"
 #include "mtf_bridge/PatchTrackers.h"
-#include "uncalibrated_visual_servoing/TrackedPoints.h"
-#include "uncalibrated_visual_servoing/TrackPoint.h"
+#include "hil_servoing/TrackedPoints.h"
+#include "hil_servoing/TrackPoint.h"
 
 // OpenCV
 #include <opencv2/core/core.hpp>
@@ -127,11 +127,11 @@ std::string getCenter(TrackerStruct &tracker) {
 	return str_center;
 }
 
-uncalibrated_visual_servoing::TrackPoint getCenterPoint(TrackerStruct &tracker) {
+hil_servoing::TrackPoint getCenterPoint(TrackerStruct &tracker) {
 	cv::Point2d cv_corners[4];
 	mtf::utils::Corners(tracker.getRegion()).points(cv_corners);
 	cv::Point center_point = getPatchCenter(cv_corners);
-	uncalibrated_visual_servoing::TrackPoint p;
+	hil_servoing::TrackPoint p;
 	p.x = center_point.x;
 	p.y = center_point.y;
 	return p;

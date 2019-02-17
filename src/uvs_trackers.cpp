@@ -1,7 +1,7 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <image_transport/image_transport.h>
-#include "mtf_bridge/InterfaceTopicHandler.h"
+#include "mtf_bridge/UVSTopicHandler.h"
 #include "mtf_bridge/PatchTrackers.h"
 #include "hil_servoing/TrackedPoints.h"
 #include "hil_servoing/TrackPoint.h"
@@ -71,12 +71,11 @@ private:
 	int id;
 };
 
-
-cv::Mat display_frame;
+// cv::Mat display_frame;
 std::vector<TrackerStruct> trackers;
 int tracker_id;
-std::vector<cv::Scalar> colors;
-int n_colors;
+// std::vector<cv::Scalar> colors;
+// int n_colors;
 bool trackers_initialized;
 std::string ids;
 std::vector<int> task_ids;
@@ -88,17 +87,15 @@ std::vector<cv::Point> static_tracker_centers;
 cv::Point static_center;
 
 ros::Publisher patch_pub;
-ros::Publisher center_pub;
-InterfaceTopicHandler *topic_handler;
+// ros::Publisher center_pub;
+UVSTopicHandler *topic_handler;
 
 cv::Point getPatchCenter(const cv::Point2d (&cv_corners)[4]) {
 	Eigen::Vector3d tl(cv_corners[0].x, cv_corners[0].y, 1);
 	Eigen::Vector3d tr(cv_corners[1].x, cv_corners[1].y, 1);
 	Eigen::Vector3d br(cv_corners[2].x, cv_corners[2].y, 1);
 	Eigen::Vector3d bl(cv_corners[3].x, cv_corners[3].y, 1);
-
 	Eigen::Vector3d center_vec = tl.cross(br).cross(tr.cross(bl));
-
 	cv::Point center;
 	center.x = center_vec(0) / center_vec(2);
 	center.y = center_vec(1) / center_vec(2);
@@ -127,15 +124,15 @@ std::string getCenter(TrackerStruct &tracker) {
 	return str_center;
 }
 
-hil_servoing::TrackPoint getCenterPoint(TrackerStruct &tracker) {
-	cv::Point2d cv_corners[4];
-	mtf::utils::Corners(tracker.getRegion()).points(cv_corners);
-	cv::Point center_point = getPatchCenter(cv_corners);
-	hil_servoing::TrackPoint p;
-	p.x = center_point.x;
-	p.y = center_point.y;
-	return p;
-}
+// hil_servoing::TrackPoint getCenterPoint(TrackerStruct &tracker) {
+// 	cv::Point2d cv_corners[4];
+// 	mtf::utils::Corners(tracker.getRegion()).points(cv_corners);
+// 	cv::Point center_point = getPatchCenter(cv_corners);
+// 	hil_servoing::TrackPoint p;
+// 	p.x = center_point.x;
+// 	p.y = center_point.y;
+// 	return p;
+// }
 
 void updateTrackers() {
 	if (trackers.empty()) {
@@ -151,25 +148,26 @@ void updateTrackers() {
 		topic_handler->doneReset();
 	} else {
 	    std::string patch_msg = "";
-	    hil_servoing::TrackedPoints center_msg;
+	    // hil_servoing::TrackedPoints center_msg;
 		for(std::vector<TrackerStruct>::iterator tracker = trackers.begin(); 
 			tracker != trackers.end(); ++tracker) {
 			(*tracker).update(*(topic_handler->getFrame()), topic_handler->getFrameID());
-			std::string patch = getPatch(*tracker);
-			std::string center = getCenter(*tracker);
-			hil_servoing::TrackPoint p = getCenterPoint(*tracker);
+			std::string patch = getPatch(*tracker) + getCenter(*tracker);
+			// std::string center = getCenter(*tracker);
+			// hil_servoing::TrackPoint p = getCenterPoint(*tracker);
 			// std::cout << center << std::endl;
 			patch_msg += patch;
-			center_msg.points.push_back(p);
+			// center_msg.points.push_back(p);
 		}
 		patch_pub.publish(patch_msg);
-		center_pub.publish(center_msg);
+		// center_pub.publish(center_msg);
 	}
 }
 
 bool createTracker(const cv::Mat init_frame, const cv::Mat init_corners, int frame_id) {
 	Tracker_ tracker;
 	PreProc_ pre_proc;
+	printf("Creating tracker with sm: %s, am: %s, ssm: %s\n", mtf_sm, mtf_am, mtf_ssm);
 	try{
 		tracker.reset(mtf::getTracker(mtf_sm, mtf_am, mtf_ssm, mtf_ilm));
 		if(!tracker){
@@ -214,31 +212,31 @@ bool createTracker(const cv::Mat init_frame, const cv::Mat init_corners, int fra
 // points are ordered: 1 ---- 2
 //                     |      |
 //                     4 ---- 3
-void createDynamicTracker(const double x_center, double y_center) {
-	if(!readParams(0, nullptr)){ return; }
+// void createDynamicTracker(const double x_center, double y_center) {
+// 	if(!readParams(0, nullptr)){ return; }
 
-	double x_left = x_center - tracker_size;
-	double x_right = x_center + tracker_size;
-	double y_bottom = y_center + tracker_size;
-	double y_top = y_center - tracker_size;
+// 	double x_left = x_center - tracker_size;
+// 	double x_right = x_center + tracker_size;
+// 	double y_bottom = y_center + tracker_size;
+// 	double y_top = y_center - tracker_size;
 
-	cv::Mat cv_corners(2, 4, CV_64FC1); 
-	cv_corners.at<double>(0, 0) = x_left;
-	cv_corners.at<double>(1, 0) = y_top;
-	cv_corners.at<double>(0, 1) = x_right;
-	cv_corners.at<double>(1, 1) = y_top;
-	cv_corners.at<double>(0, 2) = x_right;
-	cv_corners.at<double>(1, 2) = y_bottom;
-	cv_corners.at<double>(0, 3) = x_left;
-	cv_corners.at<double>(1, 3) = y_bottom;
+// 	cv::Mat cv_corners(2, 4, CV_64FC1); 
+// 	cv_corners.at<double>(0, 0) = x_left;
+// 	cv_corners.at<double>(1, 0) = y_top;
+// 	cv_corners.at<double>(0, 1) = x_right;
+// 	cv_corners.at<double>(1, 1) = y_top;
+// 	cv_corners.at<double>(0, 2) = x_right;
+// 	cv_corners.at<double>(1, 2) = y_bottom;
+// 	cv_corners.at<double>(0, 3) = x_left;
+// 	cv_corners.at<double>(1, 3) = y_bottom;
 
-	// std::cout << "xl: " << x_left << " xr: " << x_right << " ytop: " << y_top << " ybot: " << y_bottom << "\n";
+// 	// std::cout << "xl: " << x_left << " xr: " << x_right << " ytop: " << y_top << " ybot: " << y_bottom << "\n";
 
-	if(!createTracker(*(topic_handler->getFrame()), cv_corners, topic_handler->getFrameID())) {
-		std::cout << "MTF: Tracker could not be created.\n";
-	}
-	std::cout << "MTF: Dynamic tracker initialized.\n";
-}
+// 	if(!createTracker(*(topic_handler->getFrame()), cv_corners, topic_handler->getFrameID())) {
+// 		std::cout << "MTF: Tracker could not be created.\n";
+// 	}
+// 	std::cout << "MTF: Dynamic tracker initialized.\n";
+// }
 
 void createMat(const std::vector<double> v) {
     cv::Mat cv_corners(2, 4, CV_64FC1);
@@ -254,41 +252,43 @@ void createMat(const std::vector<double> v) {
 	std::cout << "MTF: Dynamic tracker initialized.\n";
 }
 
-void initializeTrackers(std::string clicked_points) {
-	std::string s = ";";
-	std::string::size_type sz;
-	std::vector<double> t;
-	int i;
-	double d;
-	istringstream iss(clicked_points);
-	do {
-		std::string subs;
-		iss >> subs;
-		i = iss.peek();
-		if (i != -1) {
-			if (subs == s){
-				createMat(t);
-				t.clear();
-			} else {
-				d = std::stod (subs, &sz);
-				t.push_back(d);
-			}
-		}
-	} while (iss);
-}
+// void initializeTrackers(std::string clicked_points) {
+// 	std::string s = ";";
+// 	std::string::size_type sz;
+// 	std::vector<double> t;
+// 	int i;
+// 	double d;
+// 	istringstream iss(clicked_points);
+// 	do {
+// 		std::string subs;
+// 		iss >> subs;
+// 		i = iss.peek();
+// 		if (i != -1) {
+// 			if (subs == s){
+// 				createMat(t);
+// 				t.clear();
+// 			} else {
+// 				d = std::stod (subs, &sz);
+// 				t.push_back(d);
+// 			}
+// 		}
+// 	} while (iss);
+// }
 
-void trackerCheck() {
-	std::string clicked_points = topic_handler->getMsg();
-	if (clicked_points.size() > 0) { 
-		topic_handler->clearMsg();
-		topic_handler->doneReset();
-		initializeTrackers(clicked_points);
-		std::cout << "MTF: All tasks initialized.\n";
+void newTrackerCheck() {
+	if (topic_handler->newTracker()) {
+		// mtf_sm = topic_handler->getSM();
+		// mtf_am = topic_handler->getAM();
+		// mtf_ssm = topic_handler->getSSM();
+		std::vector<double> clicked_points = topic_handler->getNewCorners();
+		createMat(clicked_points);
+		topic_handler->clearSrv();
+		// std::cout << "MTF: All tasks initialized.\n";
 	}
 }
 
 int main(int argc, char *argv[]) {
-	ros::init(argc, argv, "tracking_node");
+	ros::init(argc, argv, "uvs_trackers");
 	ros::NodeHandle nh_("~");
 	image_transport::ImageTransport it(nh_);
 
@@ -298,7 +298,7 @@ int main(int argc, char *argv[]) {
 	if(!readParams(argc, argv)){ return EXIT_FAILURE; }
 
 	printf("*******************************\n");
-	printf("MTF: Using parameters:\n");
+	printf("MTF Default parameters:\n");
 	printf("\tn_trackers: %u\n", n_trackers);
 	printf("\timg_source: %c\n", img_source);
 	printf("\tsource_name: %s\n", seq_name.c_str());
@@ -309,19 +309,19 @@ int main(int argc, char *argv[]) {
 	printf("\tmtf_ilm: %s\n", mtf_ilm);
 	printf("*******************************\n");
 
-	ObjUtils(obj_cols).getCols(colors);
-	n_colors = colors.size();
+	// ObjUtils(obj_cols).getCols(colors);
+	// n_colors = colors.size();
 
-	topic_handler = new InterfaceTopicHandler();
+	topic_handler = new UVSTopicHandler();
 	tracker_id = 0;
 	n_trackers = 0;
 	tracker_size = 30.0;
 	num_tasks = 0;
 	trackers_initialized = false;
-	std::cout << "MTF: Publishing to ~/trackers/patch_tracker\n";
-	std::cout << "MTF: Publishing to ~/trackers/centers\n";
-	patch_pub = nh_.advertise<std_msgs::String>("patch_tracker", 1);
-	center_pub = nh_.advertise<hil_servoing::TrackedPoints>("centers", 1);
+	std::cout << "MTF: Publishing to ~/uvs_trackers/patch\n";
+	// std::cout << "MTF: Publishing to ~/trackers/centers\n";
+	patch_pub = nh_.advertise<std_msgs::String>("patch", 1);
+	// center_pub = nh_.advertise<hil_servoing::TrackedPoints>("centers", 1);
 	ros::Rate loop_rate(rate);
 
 	while(!topic_handler->isInitialized()) {
@@ -331,7 +331,7 @@ int main(int argc, char *argv[]) {
 
 	while(ros::ok()){
 		ros::spinOnce();
-		trackerCheck();
+		newTrackerCheck();
 		updateTrackers();
 		loop_rate.sleep();
 		// if (!loop_rate.sleep())

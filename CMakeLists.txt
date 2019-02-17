@@ -73,11 +73,11 @@ add_message_files(
 )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
+ add_service_files(
+   FILES
+   InitTracker.srv
 #   Service2.srv
-#)
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -142,42 +142,83 @@ link_directories(
   /usr/X11R6/lib
   /lib/
 )
-
-add_library(SharedImageReader src/SharedImageReader.cpp)
-add_dependencies(SharedImageReader ${catkin_EXPORTED_TARGETS})
-
-add_library(InterfaceTopicHandler src/InterfaceTopicHandler.cpp)
-add_dependencies(InterfaceTopicHandler ${catkin_EXPORTED_TARGETS})
-
-add_executable(sample_tracker_node src/sample_tracker_node.cpp)
-target_compile_definitions(sample_tracker_node PUBLIC ${MTF_DEFINITIONS})
-target_compile_options(sample_tracker_node PUBLIC ${MTF_RUNTIME_FLAGS})
-# set_target_properties(sample_tracker_node PROPERTIES COMPILE_FLAGS ${MTF_RUNTIME_FLAGS}) 
-
-add_executable(interface_tracker_node src/interface_tracker_node.cpp)
-target_compile_definitions(interface_tracker_node PUBLIC ${MTF_DEFINITIONS})
-target_compile_options(interface_tracker_node PUBLIC ${MTF_RUNTIME_FLAGS})
-
-add_executable(vs_tracker_node src/vs_tracker_node.cpp)
-target_compile_definitions(vs_tracker_node PUBLIC ${MTF_DEFINITIONS})
-target_compile_options(vs_tracker_node PUBLIC ${MTF_RUNTIME_FLAGS})
-
-add_executable(SharedImageWriter src/SharedImageWriter.cpp)
-
+# ADD LIBRARIES ##################################################
+#### SharedImageReader ####
+add_library(SharedImageReader 
+  src/SharedImageReader.cpp
+)
+add_dependencies(SharedImageReader 
+  ${catkin_EXPORTED_TARGETS}
+  ${PROJECT_NAME}_generate_messages_cpp
+)
 target_link_libraries(SharedImageReader
   ${catkin_LIBRARIES}
- )
+)
+
+#### InterfaceTopicHandler ####
+add_library(InterfaceTopicHandler 
+  src/InterfaceTopicHandler.cpp
+)
+add_dependencies(InterfaceTopicHandler 
+  ${catkin_EXPORTED_TARGETS}
+  ${PROJECT_NAME}_generate_messages_cpp
+)
 target_link_libraries(InterfaceTopicHandler
   ${catkin_LIBRARIES}
- )
+)
+#### UVSTopicHandler ####
+add_library(UVSTopicHandler 
+  src/UVSTopicHandler.cpp
+)
+add_dependencies(UVSTopicHandler 
+  ${catkin_EXPORTED_TARGETS}
+  ${PROJECT_NAME}_generate_messages_cpp
+)
+target_link_libraries(UVSTopicHandler
+  ${catkin_LIBRARIES}
+)
+# ADD EXECUTABLES ##################################################
+#### SharedImageWriter ####
+add_executable(SharedImageWriter 
+  src/SharedImageWriter.cpp
+)
+add_dependencies(SharedImageWriter 
+  ${PROJECT_NAME}_generate_messages_cpp
+)
 target_link_libraries(SharedImageWriter
   ${catkin_LIBRARIES}
   rt
+)
+
+#### sample_tracker_node ####
+add_executable(sample_tracker_node 
+  src/sample_tracker_node.cpp
+)
+target_compile_definitions(sample_tracker_node PUBLIC 
+  ${MTF_DEFINITIONS}
+)
+target_compile_options(sample_tracker_node PUBLIC 
+  ${MTF_RUNTIME_FLAGS}
 )
 target_link_libraries(sample_tracker_node
   SharedImageReader
   ${catkin_LIBRARIES}
   ${MTF_LIBRARIES}
+)
+add_dependencies(sample_tracker_node 
+  ${PROJECT_NAME}_generate_messages_cpp
+)
+# set_target_properties(sample_tracker_node PROPERTIES COMPILE_FLAGS ${MTF_RUNTIME_FLAGS}) 
+
+#### interface_tracker_node ####
+add_executable(interface_tracker_node 
+  src/interface_tracker_node.cpp
+)
+target_compile_definitions(interface_tracker_node PUBLIC 
+  ${MTF_DEFINITIONS}
+)
+target_compile_options(interface_tracker_node PUBLIC 
+  ${MTF_RUNTIME_FLAGS}
 )
 target_link_libraries(interface_tracker_node
   InterfaceTopicHandler
@@ -185,25 +226,78 @@ target_link_libraries(interface_tracker_node
   ${catkin_LIBRARIES}
   ${MTF_LIBRARIES}
 )
+add_dependencies(interface_tracker_node 
+  ${PROJECT_NAME}_generate_messages_cpp
+)
+
+#### vs_tracker_node ####
+add_executable(vs_tracker_node 
+  src/vs_tracker_node.cpp
+)
+target_compile_definitions(vs_tracker_node PUBLIC 
+  ${MTF_DEFINITIONS}
+)
+target_compile_options(vs_tracker_node PUBLIC 
+  ${MTF_RUNTIME_FLAGS}
+)
 target_link_libraries(vs_tracker_node
   InterfaceTopicHandler
   SharedImageReader
   ${catkin_LIBRARIES}
   ${MTF_LIBRARIES}
 )
+
+add_dependencies(vs_tracker_node 
+  ${PROJECT_NAME}_generate_messages_cpp
+)
+
+#### uvs_trackers ####
+add_executable(uvs_trackers 
+  src/uvs_trackers.cpp
+)
+target_compile_definitions(uvs_trackers PUBLIC 
+  ${MTF_DEFINITIONS}
+)
+target_compile_options(uvs_trackers PUBLIC 
+  ${MTF_RUNTIME_FLAGS}
+)
+target_link_libraries(uvs_trackers
+  UVSTopicHandler
+  SharedImageReader
+  ${catkin_LIBRARIES}
+  ${MTF_LIBRARIES}
+)
+add_dependencies(uvs_trackers 
+  ${PROJECT_NAME}_generate_messages_cpp
+)
+
+#### testing ####
+add_executable(testing 
+  src/some_tracker_node.cpp
+)
+target_compile_definitions(testing PUBLIC 
+  ${MTF_DEFINITIONS}
+)
+target_compile_options(testing PUBLIC 
+  ${MTF_RUNTIME_FLAGS}
+)
+target_link_libraries(testing
+  SharedImageReader
+  ${catkin_LIBRARIES}
+  ${MTF_LIBRARIES}
+)
+add_dependencies(testing 
+  ${PROJECT_NAME}_generate_messages_cpp
+)
+
+################################################################
+
 #add_dependencies(SharedImageReader ${PROJECT_NAME}_generate_messages_cpp ${PROJECT_NAME}_gencfg)
 #add_dependencies(InterfaceTopicHandler ${PROJECT_NAME}_generate_messages_cpp ${PROJECT_NAME}_gencfg)
 #add_dependencies(SharedImageWriter ${PROJECT_NAME}_generate_messages_cpp ${PROJECT_NAME}_gencfg)
 #add_dependencies(sample_tracker_node ${PROJECT_NAME}_generate_messages_cpp ${PROJECT_NAME}_gencfg)
 #add_dependencies(interface_tracker_node ${PROJECT_NAME}_generate_messages_cpp ${PROJECT_NAME}_gencfg)
 #add_dependencies(vs_tracker_node ${PROJECT_NAME}_generate_messages_cpp ${PROJECT_NAME}_gencfg)
-
-add_dependencies(SharedImageReader ${PROJECT_NAME}_generate_messages_cpp)
-add_dependencies(InterfaceTopicHandler ${PROJECT_NAME}_generate_messages_cpp)
-add_dependencies(SharedImageWriter ${PROJECT_NAME}_generate_messages_cpp)
-add_dependencies(sample_tracker_node ${PROJECT_NAME}_generate_messages_cpp)
-add_dependencies(interface_tracker_node ${PROJECT_NAME}_generate_messages_cpp)
-add_dependencies(vs_tracker_node ${PROJECT_NAME}_generate_messages_cpp)
 
 message(STATUS "MTF_DEFINITIONS: ${MTF_DEFINITIONS}")
 # message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
